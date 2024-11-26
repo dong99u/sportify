@@ -23,4 +23,4 @@ RUN poetry install --no-root --no-dev
 COPY . .
 
 # gunicorn으로 서버 실행
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "sportify.wsgi:application"]
+CMD ["gunicorn", "--bind", "127.0.0.1:8000", "config.wsgi:application"]
