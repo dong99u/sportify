@@ -33,7 +33,7 @@ jobs:
       with:
         host: ${{ secrets.EC2_HOST }}
         username: ubuntu
-        key_path: ~/.ssh/id_ed25519
+        key: ${{ secrets.EC2_SSH_KEY }}
         source: "."
         target: "/home/ubuntu/sportify"
         debug: true
@@ -43,7 +43,7 @@ jobs:
       with:
         host: ${{ secrets.EC2_HOST }}
         username: ubuntu
-        key_path: ~/.ssh/id_ed25519
+        key: ${{ secrets.EC2_SSH_KEY }}
         script: |
           cd /home/ubuntu/sportify
           docker-compose down
