@@ -22,8 +22,8 @@ RUN poetry install --no-root --no-dev
 # 프로젝트 파일 복사
 COPY . .
 
-# gunicorn으로 서버 실행
-# Poetry 가상환경 실행
-RUN poetry shell
+# PYTHONPATH 설정
+ENV PYTHONPATH=/app:$PYTHONPATH
 
+# gunicorn으로 서버 실행
 CMD ["gunicorn", "--bind", "0.0.0.0:8000", "config.wsgi:application"]

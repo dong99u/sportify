@@ -35,13 +35,9 @@ SECRET_KEY = "django-insecure-tx1v9nk(24w7lb_zh&^fbtw_feum7)!#5xxfq_rt!9rvo4djoj
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-# config/settings.py
-ALLOWED_HOSTS = [
-    "localhost",
-    "127.0.0.1",
-    "0.0.0.0",
-    "db-hufsthon.chu202akwjzf.ap-northeast-2.rds.amazonaws.com",
-]
+import os
+
+ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 
 
 # Application definition
