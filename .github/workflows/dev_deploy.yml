@@ -13,63 +13,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Set up SSH key
-      run: |
-        mkdir -p ~/.ssh
-        echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
-        chmod 600 ~/.ssh/id_rsa
-        ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
-
-    - name: Prepare deployment directory
-      uses: appleboy/ssh-action@master
-      with:
-        host: ${{ secrets.EC2_HOST }}
-        username: ubuntu
-        key: ${{ secrets.EC2_SSH_KEY }}
-        script: |
-          # Docker 네트워크 정리
-          docker network prune -f
-          
-          # 홈 디렉토리로 이동
-          cd ~
-          
-          # 기존 프로세스 정리
-          if [ -d "sportify" ]; then
-            cd sportify
-            docker compose down || true
-            cd ..
-          fi
-          
-          # 백업 디렉토리 정리 (권한 문제 해결)
-          if [ -d "sportify_backup" ]; then
-            sudo rm -rf sportify_backup
-          fi
-          
-          # 기존 디렉토리 백업
-          if [ -d "sportify" ]; then
-            mv sportify sportify_backup
-          fi
-          
-          # 새 디렉토리 생성
-          mkdir -p sportify
-          sudo chown -R ubuntu:ubuntu sportify
-
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v1
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ap-northeast-2
-
-    - name: Copy files to EC2
-      uses: appleboy/scp-action@master
-      with:
-        host: ${{ secrets.EC2_HOST }}
-        username: ubuntu
-        key: ${{ secrets.EC2_SSH_KEY }}
-        source: "."
-        target: "/home/ubuntu/sportify"
-        strip_components: 0
+    # ... (이전 설정들) ...
 
     - name: Deploy to EC2
       uses: appleboy/ssh-action@master
@@ -80,27 +24,18 @@ jobs:
         script: |
           cd ~/sportify
           
-          # .env 파일 복원 또는 생성
-          if [ -f "../sportify_backup/.env" ]; then
-            cp ../sportify_backup/.env .
-          else
-            echo "Creating new .env file..."
-            echo "DEBUG=0" >> .env
-            echo "SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}" >> .env
-            echo "DJANGO_ALLOWED_HOSTS=${{ secrets.EC2_HOST }}" >> .env
-            echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
-            echo "DB_USER=${{ secrets.DB_USER }}" >> .env
-            echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
-            echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env
-            echo "DB_PORT=${{ secrets.DB_PORT }}" >> .env
-          fi
+          # .env 파일 생성 또는 업데이트
+          cat > .env << EOL
+          DEBUG=0
+          SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}
+          DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,dev.hufsthon.site,dev.hufsthon.site:8000
+          DB_NAME=${{ secrets.DB_NAME }}
+          DB_USER=${{ secrets.DB_USER }}
+          DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+          DB_HOST=${{ secrets.DB_HOST }}
+          DB_PORT=${{ secrets.DB_PORT }}
+          EOL
           
           # Docker 관련 명령어 실행
-          sudo docker network prune -f
-          sudo docker compose down || true
+          sudo docker compose down
           sudo docker compose up --build -d
-          
-          # 백업 정리 (sudo 사용)
-          if [ -d "../sportify_backup" ]; then
-            sudo rm -rf ../sportify_backup
-          fi
