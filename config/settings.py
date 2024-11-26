@@ -37,7 +37,21 @@ DEBUG = True
 
 import os
 
-ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+ALLOWED_HOSTS = [
+    "localhost",
+    "127.0.0.1",
+    "dev.hufsthon.site",
+    "dev.hufsthon.site:8000",  # 포트를 포함한 도메인
+    os.getenv("DJANGO_ALLOWED_HOSTS", "").split(","),  # 환경변수에서 추가 호스트 설정
+]
+
+# 리스트 평탄화 (flatten)
+ALLOWED_HOSTS = [
+    host
+    for hosts in ALLOWED_HOSTS
+    for host in (hosts if isinstance(hosts, list) else [hosts])
+    if host
+]
 
 
 # Application definition
@@ -68,6 +82,7 @@ INSTALLED_APPS = SYSTEM_APPS + CUSTOM_APPS
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -157,3 +172,40 @@ STATIC_URL = "static/"
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+
+# CORS 설정
+CORS_ALLOW_ALL_ORIGINS = True  # 개발 환경에서만 사용
+CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+    "http://dev.hufsthon.site:8000",
+]
+
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^http://\w+\.hufsthon\.site:8000$",
+]
+
+# 필요한 경우 추가 CORS 설정
+CORS_ALLOW_METHODS = [
+    "DELETE",
+    "GET",
+    "OPTIONS",
+    "PATCH",
+    "POST",
+    "PUT",
+]
+
+CORS_ALLOW_HEADERS = [
+    "accept",
+    "accept-encoding",
+    "authorization",
+    "content-type",
+    "dnt",
+    "origin",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
+]
