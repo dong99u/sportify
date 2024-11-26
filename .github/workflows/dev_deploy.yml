@@ -13,7 +13,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    # ... (이전 설정들) ...
+    # ... (이전 steps) ...
 
     - name: Deploy to EC2
       uses: appleboy/ssh-action@master
@@ -24,7 +24,7 @@ jobs:
         script: |
           cd ~/sportify
           
-          # .env 파일 생성 또는 업데이트
+          # .env 파일 생성
           cat > .env << EOL
           DEBUG=0
           SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}
@@ -36,6 +36,12 @@ jobs:
           DB_PORT=${{ secrets.DB_PORT }}
           EOL
           
-          # Docker 관련 명령어 실행
+          # 정적 파일 디렉토리 생성
+          mkdir -p staticfiles
+          
+          # Docker 컨테이너 재시작
           sudo docker compose down
           sudo docker compose up --build -d
+          
+          # 정적 파일 수집
+          sudo docker compose exec web python manage.py collectstatic --noinput
