@@ -36,6 +36,8 @@ jobs:
         source: "."
         target: "/home/ubuntu/sportify"
         strip_components: 0
+        rm: true  # 기존 파일 삭제
+        exclude: ".env"  # .env 파일은 제외
 
     - name: Deploy to EC2
       uses: appleboy/ssh-action@master
