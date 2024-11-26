@@ -27,21 +27,31 @@ jobs:
         username: ubuntu
         key: ${{ secrets.EC2_SSH_KEY }}
         script: |
+          # Docker 네트워크 정리
+          docker network prune -f
+          
           # 홈 디렉토리로 이동
           cd ~
           
-          # 이전 배포 디렉토리 백업 (있다면)
+          # 기존 프로세스 정리
           if [ -d "sportify" ]; then
-            if [ -d "sportify_backup" ]; then
-              rm -rf sportify_backup
-            fi
+            cd sportify
+            docker compose down || true
+            cd ..
+          fi
+          
+          # 백업 디렉토리 정리 (권한 문제 해결)
+          if [ -d "sportify_backup" ]; then
+            sudo rm -rf sportify_backup
+          fi
+          
+          # 기존 디렉토리 백업
+          if [ -d "sportify" ]; then
             mv sportify sportify_backup
           fi
           
           # 새 디렉토리 생성
           mkdir -p sportify
-          
-          # 권한 설정
           sudo chown -R ubuntu:ubuntu sportify
 
     - name: Configure AWS credentials
@@ -68,11 +78,7 @@ jobs:
         username: ubuntu
         key: ${{ secrets.EC2_SSH_KEY }}
         script: |
-          # 홈 디렉토리로 이동
-          cd ~
-          
-          # sportify 디렉토리로 이동
-          cd sportify
+          cd ~/sportify
           
           # .env 파일 복원 또는 생성
           if [ -f "../sportify_backup/.env" ]; then
@@ -89,14 +95,12 @@ jobs:
             echo "DB_PORT=${{ secrets.DB_PORT }}" >> .env
           fi
           
-          # Docker 컨테이너 중지 및 재시작
-          if command -v docker compose &> /dev/null; then
-            docker compose down || true
-            docker compose up --build -d
-          else
-            docker-compose down || true
-            docker-compose up --build -d
-          fi
+          # Docker 관련 명령어 실행
+          sudo docker network prune -f
+          sudo docker compose down || true
+          sudo docker compose up --build -d
           
-          # 이전 백업 정리 (선택사항)
-          rm -rf ../sportify_backup
+          # 백업 정리 (sudo 사용)
+          if [ -d "../sportify_backup" ]; then
+            sudo rm -rf ../sportify_backup
+          fi
