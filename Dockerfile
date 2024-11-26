@@ -22,8 +22,14 @@ RUN poetry install --no-root --no-dev
 # 프로젝트 파일 복사
 COPY . .
 
+# 정적 파일 디렉토리 생성
+RUN mkdir -p staticfiles
+
 # PYTHONPATH 설정
 ENV PYTHONPATH=/app:$PYTHONPATH
+
+# 정적 파일 수집
+RUN python manage.py collectstatic --noinput
 
 # gunicorn으로 서버 실행
 CMD ["gunicorn", "--bind", "0.0.0.0:8000", "config.wsgi:application"]
