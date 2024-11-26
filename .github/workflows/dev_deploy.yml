@@ -20,6 +20,30 @@ jobs:
         chmod 600 ~/.ssh/id_rsa
         ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
+    - name: Prepare deployment directory
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ubuntu
+        key: ${{ secrets.EC2_SSH_KEY }}
+        script: |
+          # 홈 디렉토리로 이동
+          cd ~
+          
+          # 이전 배포 디렉토리 백업 (있다면)
+          if [ -d "sportify" ]; then
+            if [ -d "sportify_backup" ]; then
+              rm -rf sportify_backup
+            fi
+            mv sportify sportify_backup
+          fi
+          
+          # 새 디렉토리 생성
+          mkdir -p sportify
+          
+          # 권한 설정
+          sudo chown -R ubuntu:ubuntu sportify
+
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v1
       with:
@@ -36,8 +60,6 @@ jobs:
         source: "."
         target: "/home/ubuntu/sportify"
         strip_components: 0
-        rm: true  # 기존 파일 삭제
-        exclude: ".env"  # .env 파일은 제외
 
     - name: Deploy to EC2
       uses: appleboy/ssh-action@master
@@ -46,6 +68,35 @@ jobs:
         username: ubuntu
         key: ${{ secrets.EC2_SSH_KEY }}
         script: |
-          cd /home/ubuntu/sportify
-          docker-compose down
-          docker-compose up --build -d
+          # 홈 디렉토리로 이동
+          cd ~
+          
+          # sportify 디렉토리로 이동
+          cd sportify
+          
+          # .env 파일 복원 또는 생성
+          if [ -f "../sportify_backup/.env" ]; then
+            cp ../sportify_backup/.env .
+          else
+            echo "Creating new .env file..."
+            echo "DEBUG=0" >> .env
+            echo "SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}" >> .env
+            echo "DJANGO_ALLOWED_HOSTS=${{ secrets.EC2_HOST }}" >> .env
+            echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
+            echo "DB_USER=${{ secrets.DB_USER }}" >> .env
+            echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
+            echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env
+            echo "DB_PORT=${{ secrets.DB_PORT }}" >> .env
+          fi
+          
+          # Docker 컨테이너 중지 및 재시작
+          if command -v docker compose &> /dev/null; then
+            docker compose down || true
+            docker compose up --build -d
+          else
+            docker-compose down || true
+            docker-compose up --build -d
+          fi
+          
+          # 이전 백업 정리 (선택사항)
+          rm -rf ../sportify_backup
