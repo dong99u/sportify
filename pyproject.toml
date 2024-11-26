@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "morning-buddies"
+name = "sportify"
 version = "0.1.0"
-description = "morning_buddies python server"
+description = "sportify python server"
 authors = ["Park Dongkyu <86235780+dong99u@users.noreply.github.com>"]
 license = "MIT"
 readme = "README.md"

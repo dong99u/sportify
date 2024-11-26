@@ -51,7 +51,6 @@ CUSTOM_APPS = [
     "sido.apps.SidoConfig",
     "gugun.apps.GugunConfig",
     "dong.apps.DongConfig",
-    "jibun_addresses.apps.JibunAddressesConfig",
     "road_addresses.apps.RoadAddressesConfig",
     "centers.apps.CentersConfig",
     "courses.apps.CoursesConfig",

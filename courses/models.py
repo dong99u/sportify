@@ -65,6 +65,7 @@ class Course(Common):
     )
 
     class Meta:
+        db_table = "course"
         verbose_name = "강좌"
         verbose_name_plural = "강좌 목록"
         ordering = ["-created_at"]

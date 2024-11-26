@@ -27,3 +27,9 @@ class RoadAddress(Common):
         max_length=5,
         verbose_name="우편번호코드",
     )
+
+    class Meta:
+        db_table = "road_address"
+        verbose_name = "로드 주소"
+        verbose_name_plural = "로드 주소 목록"
+        ordering = ["-created_at"]

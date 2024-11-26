@@ -14,3 +14,9 @@ class Gugun(Common):
         max_length=20,
         verbose_name="구군명",
     )
+
+    class Meta:
+        db_table = "gugun"
+        verbose_name = "구군"
+        verbose_name_plural = "구군 목록"
+        ordering = ["-created_at"]

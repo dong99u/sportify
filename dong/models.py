@@ -18,3 +18,9 @@ class Dong(Common):
         max_length=20,
         verbose_name="동명",
     )
+
+    class Meta:
+        db_table = "dong"
+        verbose_name = "동"
+        verbose_name_plural = "동 목록"
+        ordering = ["-created_at"]
