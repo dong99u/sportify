@@ -35,40 +35,27 @@ jobs:
         docker build -t ${{ env.ECR_REPOSITORY }}:${{ github.sha }} .
         docker tag ${{ env.ECR_REPOSITORY }}:${{ github.sha }} ${{ env.ECR_REPOSITORY }}:latest
 
-    # 배포를 위한 파일 준비
-    - name: Prepare deployment files
-      run: |
-        mkdir -p deploy
-        cp docker-compose.yml deploy/
-        echo "${{ secrets.ENV_FILE }}" > deploy/.env
-
     # SSH 키 설정
-    - name: Setup SSH Keys and known_hosts
-      env:
-        SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+    - name: Setup SSH
       run: |
         mkdir -p ~/.ssh
-        ssh-agent -a $SSH_AUTH_SOCK > /dev/null
-        ssh-keyscan github.com >> ~/.ssh/known_hosts
-        ssh-keyscan ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
-        echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/deploy_key
-        chmod 600 ~/.ssh/deploy_key
-        ssh-add ~/.ssh/deploy_key
-
-    # SCP로 파일 전송
-    - name: Copy files to EC2
-      env:
-        SSH_AUTH_SOCK: /tmp/ssh_agent.sock
-      run: |
-        scp -o StrictHostKeyChecking=no -i ~/.ssh/deploy_key -r deploy/* ${{ env.EC2_USERNAME }}@${{ env.EC2_HOST }}:/home/${{ env.EC2_USERNAME }}/sportify/
-
-    # SSH로 배포 실행
+        echo "${{ secrets.EC2_SSH_KEY }}" | tr -d '\r' > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+        
+    # SSH 연결 테스트
+    - name: Test SSH Connection
+      run: ssh -v -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ env.EC2_USERNAME }}@${{ secrets.EC2_HOST }} 'echo "Connected successfully"'
+    
+    # 배포
     - name: Deploy to EC2
-      env:
-        SSH_AUTH_SOCK: /tmp/ssh_agent.sock
       run: |
-        ssh -o StrictHostKeyChecking=no -i ~/.ssh/deploy_key ${{ env.EC2_USERNAME }}@${{ env.EC2_HOST }} '
-          cd /home/${{ env.EC2_USERNAME }}/sportify &&
-          docker-compose pull &&
+        # docker-compose.yml 파일 전송
+        scp -i ~/.ssh/id_rsa docker-compose.yml ${{ env.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:/home/ubuntu/sportify/
+        
+        # 배포 명령 실행
+        ssh -i ~/.ssh/id_rsa ${{ env.EC2_USERNAME }}@${{ secrets.EC2_HOST }} '
+          cd /home/ubuntu/sportify
+          docker-compose pull
           docker-compose up -d
         '
