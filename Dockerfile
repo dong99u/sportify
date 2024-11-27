@@ -27,5 +27,8 @@ RUN poetry install --no-interaction --no-ansi
 # 프로젝트 파일 복사
 COPY . .
 
+# 정적 파일 수집
+RUN poetry run python manage.py collectstatic --noinput
+
 # gunicorn으로 서버 실행
 CMD ["poetry", "run", "gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000"]

@@ -60,6 +60,10 @@ SYSTEM_APPS = [
 
 INSTALLED_APPS = SYSTEM_APPS + CUSTOM_APPS
 
+# Static files (CSS, JavaScript, Images)
+STATIC_URL = "/static/"
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",

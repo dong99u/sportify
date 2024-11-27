@@ -71,7 +71,12 @@ jobs:
             docker pull ${DOCKER_USERNAME}/sportify:latest
             docker stop sportify || true
             docker rm sportify || true
+            # Docker container 실행
             docker run -d --name sportify \
               -p 8000:8000 \
               --env-file .env \
+              -v $(pwd)/staticfiles:/app/staticfiles \  # 정적 파일을 위한 볼륨 마운트
               ${DOCKER_USERNAME}/sportify:latest
+
+            # 권한 설정
+            sudo chown -R 1000:1000 $(pwd)/staticfiles
