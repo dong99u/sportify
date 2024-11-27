@@ -33,25 +33,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "django-insecure-tx1v9nk(24w7lb_zh&^fbtw_feum7)!#5xxfq_rt!9rvo4djoj"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-import os
-
-ALLOWED_HOSTS = [
-    "localhost",
-    "127.0.0.1",
-    "dev.hufsthon.site",
-    "dev.hufsthon.site:8000",  # 포트를 포함한 도메인
-    os.getenv("DJANGO_ALLOWED_HOSTS", "").split(","),  # 환경변수에서 추가 호스트 설정
-]
-
-# 리스트 평탄화 (flatten)
-ALLOWED_HOSTS = [
-    host
-    for hosts in ALLOWED_HOSTS
-    for host in (hosts if isinstance(hosts, list) else [hosts])
-    if host
-]
+DEBUG = os.environ.get("DEBUG", "1") == "1"
+SECRET_KEY = os.environ.get("SECRET_KEY")
+ALLOWED_HOSTS = ["*"]  # 프로덕션에서는 실제 도메인으로 변경
 
 
 # Application definition
