@@ -21,8 +21,8 @@ jobs:
       - name: Login to Docker Hub
         uses: docker/login-action@v1
         with:
-          username: ${{ secrets.DOCKER_HUB_USERNAME }}
-          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Create .env file
         run: |
@@ -36,7 +36,7 @@ jobs:
 
       - name: Build and push Docker image
         run: |
-          DOCKER_USERNAME="${{ secrets.DOCKER_HUB_USERNAME }}"
+          DOCKER_USERNAME="${{ secrets.DOCKERHUB_USERNAME }}"
           if [ -z "$DOCKER_USERNAME" ]; then
             DOCKER_USERNAME="dong99u"
           fi
@@ -50,13 +50,14 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            DOCKER_USERNAME="${{ secrets.DOCKER_HUB_USERNAME }}"
+            DOCKER_USERNAME="${{ secrets.DOCKERHUB_USERNAME }}"
             if [ -z "$DOCKER_USERNAME" ]; then
               DOCKER_USERNAME="dong99u"
             fi
             
-            # Create directory for static files
-            mkdir -p ~/staticfiles
+            # Create required directories
+            mkdir -p /home/ubuntu/static /home/ubuntu/staticfiles
+            chmod -R 755 /home/ubuntu/static /home/ubuntu/staticfiles
             
             # Create .env file on EC2
             echo "DJANGO_SECRET_KEY='${{ secrets.DJANGO_SECRET_KEY }}'" > .env
@@ -67,17 +68,17 @@ jobs:
             echo "DB_HOST='${{ secrets.DB_HOST }}'" >> .env
             echo "DB_PORT=3306" >> .env
 
-            # Pull and run Docker container
+            # Pull and run the Docker container
             docker pull ${DOCKER_USERNAME}/sportify:latest
             docker stop sportify || true
             docker rm sportify || true
-            
-            # Run container with proper volume mount
             docker run -d --name sportify \
               -p 8000:8000 \
               --env-file .env \
-              -v ~/staticfiles:/app/staticfiles \
+              -v /home/ubuntu/static:/app/static \
+              -v /home/ubuntu/staticfiles:/app/staticfiles \
               ${DOCKER_USERNAME}/sportify:latest
 
-            # Set proper permissions
-            sudo chown -R $USER:$USER ~/staticfiles
+            # Wait for container to start and then collect static files
+            sleep 5
+            docker exec sportify poetry run python manage.py collectstatic --noinput

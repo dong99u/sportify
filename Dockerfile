@@ -27,6 +27,10 @@ RUN poetry install --no-interaction --no-ansi
 # 프로젝트 파일 복사
 COPY . .
 
+# static 디렉토리 생성 및 권한 설정
+RUN mkdir -p static staticfiles && \
+    chmod -R 755 static staticfiles
+
 # 정적 파일 수집
 RUN poetry run python manage.py collectstatic --noinput
 
