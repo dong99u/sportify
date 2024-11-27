@@ -6,6 +6,8 @@ WORKDIR /app
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     build-essential \
+    pkg-config \
+    python3-dev \
     default-libmysqlclient-dev \
     && rm -rf /var/lib/apt/lists/*
 
@@ -19,7 +21,7 @@ RUN poetry config virtualenvs.create false
 COPY pyproject.toml poetry.lock ./
 
 # 의존성 설치
-RUN poetry install --no-dev --no-root
+RUN poetry install --only main --no-root
 
 # 프로젝트 파일 복사
 COPY . .
