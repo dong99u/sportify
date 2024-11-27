@@ -60,9 +60,19 @@ SYSTEM_APPS = [
 
 INSTALLED_APPS = SYSTEM_APPS + CUSTOM_APPS
 
+BASE_DIR = Path(__file__).resolve().parent.parent
+
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = "/static/"
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+
+# 추가 정적 파일 디렉토리 설정 (선택사항)
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, "static"),
+]
+
+# WhiteNoise 설정
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
