@@ -1,35 +1,38 @@
+# Use an official Python runtime as a parent image
 FROM python:3.10.12-slim
 
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+
+# Set work directory
 WORKDIR /app
 
-# 시스템 패키지 설치
-RUN apt-get update && \
-    apt-get install -y default-libmysqlclient-dev build-essential pkg-config && \
-    rm -rf /var/lib/apt/lists/*
+# Install system dependencies
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        build-essential \
+        default-libmysqlclient-dev \
+        pkg-config \
+    && rm -rf /var/lib/apt/lists/*
 
-# Poetry 설치
+# Install poetry
 RUN pip install poetry
 
-# Poetry 가상환경 생성하지 않도록 설정
-RUN poetry config virtualenvs.create false
-
-# 프로젝트 의존성 파일 복사
+# Copy poetry files
 COPY pyproject.toml poetry.lock ./
 
-# 의존성 설치
-RUN poetry install --no-root --no-dev
+# Configure poetry to not create a virtual environment inside container
+RUN poetry config virtualenvs.create false
 
-# 프로젝트 파일 복사
+# Install dependencies
+RUN poetry install --no-dev
+
+# Copy project
 COPY . .
 
-# 정적 파일 디렉토리 생성
-RUN mkdir -p staticfiles
+# Expose the port the app runs on
+EXPOSE 8000
 
-# PYTHONPATH 설정
-ENV PYTHONPATH=/app:$PYTHONPATH
-
-# 정적 파일 수집
-RUN python manage.py collectstatic --noinput
-
-# gunicorn으로 서버 실행
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "config.wsgi:application"]
+# Command to run the application
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "sportify.wsgi:application"]
