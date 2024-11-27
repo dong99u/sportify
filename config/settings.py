@@ -29,18 +29,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-tx1v9nk(24w7lb_zh&^fbtw_feum7)!#5xxfq_rt!9rvo4djoj"
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-# config/settings.py
-ALLOWED_HOSTS = [
-    "localhost",
-    "127.0.0.1",
-    "db-hufsthon.chu202akwjzf.ap-northeast-2.rds.amazonaws.com",
-]
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
+DEBUG = os.getenv("DJANGO_DEBUG", "False") == "True"
+ALLOWED_HOSTS = ["*"]  # 프로덕션에서는 실제 도메인으로 제한하세요
 
 
 # Application definition
@@ -106,16 +98,11 @@ WSGI_APPLICATION = "config.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
-        "NAME": "hufsthon",
-        "USER": "root",  # 직접 값을 설정
-        "PASSWORD": "ehdfprl77",  # 직접 값을 설정
-        "HOST": "db-hufsthon.chu202akwjzf.ap-northeast-2.rds.amazonaws.com",
+        "NAME": os.getenv("DB_NAME"),
+        "USER": os.getenv("DB_USER"),
+        "PASSWORD": os.getenv("DB_PASSWORD"),
+        "HOST": os.getenv("DB_HOST"),
         "PORT": "3306",
-        "OPTIONS": {
-            "charset": "utf8mb4",
-            "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
-            "autocommit": True,
-        },
     }
 }
 
