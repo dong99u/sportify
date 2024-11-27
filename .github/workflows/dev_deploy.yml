@@ -2,7 +2,7 @@ name: Deploy to EC2
 
 on:
   push:
-    branches: [ "develop" ]
+    branches: [ "main" ]
 
 jobs:
   deploy:
@@ -36,8 +36,14 @@ jobs:
 
       - name: Build and push Docker image
         run: |
-          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/sportify:latest .
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/sportify:latest
+          # DOCKERHUB_USERNAME이 설정되어 있지 않은 경우를 위한 기본값 설정
+          DOCKER_USERNAME="${{ secrets.DOCKER_HUB_USERNAME }}"
+          if [ -z "$DOCKER_USERNAME" ]; then
+            echo "DOCKERHUB_USERNAME is not set. Using default value."
+            DOCKER_USERNAME="dong99u"
+          fi
+          docker build -t ${DOCKER_USERNAME}/sportify:latest .
+          docker push ${DOCKER_USERNAME}/sportify:latest
 
       - name: Deploy to EC2
         uses: appleboy/ssh-action@master
@@ -46,6 +52,12 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
+            # DOCKERHUB_USERNAME이 설정되어 있지 않은 경우를 위한 기본값 설정
+            DOCKER_USERNAME="${{ secrets.DOCKER_HUB_USERNAME }}"
+            if [ -z "$DOCKER_USERNAME" ]; then
+              DOCKER_USERNAME="dong99u"
+            fi
+            
             # Create .env file on EC2
             echo "DJANGO_SECRET_KEY='${{ secrets.DJANGO_SECRET_KEY }}'" > .env
             echo "DJANGO_DEBUG=False" >> .env
@@ -56,10 +68,10 @@ jobs:
             echo "DB_PORT=3306" >> .env
 
             # Pull and run the Docker container
-            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/sportify:latest
+            docker pull ${DOCKER_USERNAME}/sportify:latest
             docker stop sportify || true
             docker rm sportify || true
             docker run -d --name sportify \
               -p 8000:8000 \
               --env-file .env \
-              ${{ secrets.DOCKERHUB_USERNAME }}/sportify:latest
+              ${DOCKER_USERNAME}/sportify:latest
