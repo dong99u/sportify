@@ -2,7 +2,12 @@ name: Deploy to EC2
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "develop" ]
+  pull_request:
+    types:
+      - closed
+    branches:
+      - develop
 
 env:
   AWS_REGION: ap-northeast-2
@@ -12,6 +17,8 @@ env:
 
 jobs:
   deploy:
+    # PR이 머지되었을 때만 실행
+    if: github.event.pull_request.merged == true || github.event_name == 'push'
     runs-on: ubuntu-latest
     
     steps:
