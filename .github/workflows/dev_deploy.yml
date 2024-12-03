@@ -1,84 +1,74 @@
-name: Deploy to EC2
+name: Django CI/CD
 
 on:
   push:
     branches: [ "develop" ]
+  pull_request:
+    branches: [ "develop" ]
 
 jobs:
-  deploy:
+  test:
     runs-on: ubuntu-latest
+    
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: hufsthon
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
 
     steps:
-      - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10.12'
+    
+    - name: Install Poetry
+      run: |
+        curl -sSL https://install.python-poetry.org | python3 -
+    
+    - name: Install Dependencies
+      run: poetry install
+    
+    - name: Run Tests
+      env:
+        DATABASE_URL: db-hufsthon.chu202akwjzf.ap-northeast-2.rds.amazonaws.com/hufsthon
+      run: |
+        poetry run python manage.py test
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ap-northeast-2
-
-      - name: Login to Docker Hub
-        uses: docker/login-action@v1
-        with:
-          username: ${{ secrets.DOCKER_HUB_USERNAME }}
-          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
-
-      - name: Create .env file
-        run: |
-          echo "DJANGO_SECRET_KEY='${{ secrets.DJANGO_SECRET_KEY }}'" >> .env
-          echo "DJANGO_DEBUG=False" >> .env
-          echo "DB_NAME='${{ secrets.DB_NAME }}'" >> .env
-          echo "DB_USER='${{ secrets.DB_USER }}'" >> .env
-          echo "DB_PASSWORD='${{ secrets.DB_PASSWORD }}'" >> .env
-          echo "DB_HOST='${{ secrets.DB_HOST }}'" >> .env
-          echo "DB_PORT=3306" >> .env
-
-      - name: Build and push Docker image
-        run: |
-          DOCKER_USERNAME="${{ secrets.DOCKER_HUB_USERNAME }}"
-          if [ -z "$DOCKER_USERNAME" ]; then
-            DOCKER_USERNAME="dong99u"
-          fi
-          docker build -t ${DOCKER_USERNAME}/sportify:latest .
-          docker push ${DOCKER_USERNAME}/sportify:latest
-
-      - name: Deploy to EC2
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            DOCKER_USERNAME="${{ secrets.DOCKER_HUB_USERNAME }}"
-            if [ -z "$DOCKER_USERNAME" ]; then
-              DOCKER_USERNAME="dong99u"
-            fi
-            
-            # Create required directories
-            mkdir -p /home/ubuntu/static /home/ubuntu/staticfiles
-            chmod -R 755 /home/ubuntu/static /home/ubuntu/staticfiles
-            
-            # Create .env file on EC2
-            echo "DJANGO_SECRET_KEY='${{ secrets.DJANGO_SECRET_KEY }}'" > .env
-            echo "DJANGO_DEBUG=False" >> .env
-            echo "DB_NAME='${{ secrets.DB_NAME }}'" >> .env
-            echo "DB_USER='${{ secrets.DB_USER }}'" >> .env
-            echo "DB_PASSWORD='${{ secrets.DB_PASSWORD }}'" >> .env
-            echo "DB_HOST='${{ secrets.DB_HOST }}'" >> .env
-            echo "DB_PORT=3306" >> .env
-
-            # Pull and run the Docker container
-            docker pull ${DOCKER_USERNAME}/sportify:latest
-            docker stop sportify || true
-            docker rm sportify || true
-            docker run -d --name sportify \
-              -p 8000:8000 \
-              --env-file .env \
-              -v /home/ubuntu/static:/app/static \
-              -v /home/ubuntu/staticfiles:/app/staticfiles \
-              ${DOCKER_USERNAME}/sportify:latest
-
-            # Wait for container to start and then collect static files
-            sleep 5
-            docker exec sportify poetry run python manage.py collectstatic --noinput
+  deploy:
+    needs: test
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10.12'
+    
+    - name: Install Poetry
+      run: |
+        curl -sSL https://install.python-poetry.org | python3 -
+    
+    - name: Create deployment package
+      run: |
+        zip -r deploy.zip . -x "*.git*"
+    
+    - name: Deploy to EB
+      uses: einaregilsson/beanstalk-deploy@v21
+      with:
+        aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        application_name: sportify
+        environment_name: Sportify-env
+        region: ap-northeast-2
+        deployment_package: deploy.zip
+        version_label: ${{ github.sha }}

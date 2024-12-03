@@ -12,6 +12,9 @@ load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+MEDIA_URL = "/media/"
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
 DEBUG = os.getenv("DJANGO_DEBUG", "False") == "True"
@@ -20,13 +23,9 @@ ALLOWED_HOSTS = ["*"]
 # Application definition
 CUSTOM_APPS = [
     "common.apps.CommonConfig",
+    "regions.apps.RegionsConfig",
     "categories.apps.CategoriesConfig",
-    "sido.apps.SidoConfig",
-    "gugun.apps.GugunConfig",
-    "dong.apps.DongConfig",
-    "road_addresses.apps.RoadAddressesConfig",
-    "centers.apps.CentersConfig",
-    "courses.apps.CoursesConfig",
+    "programs.apps.ProgramsConfig",
 ]
 
 SYSTEM_APPS = [
@@ -40,10 +39,26 @@ SYSTEM_APPS = [
 
 THIRD_PARTY_APPS = [
     "corsheaders",
-    "whitenoise.runserver_nostatic",  # 개발 서버에서도 whitenoise 사용
+    "whitenoise.runserver_nostatic",
+    "multiselectfield",
+    "rest_framework",  # 추가
 ]
 
-INSTALLED_APPS = SYSTEM_APPS + CUSTOM_APPS + THIRD_PARTY_APPS
+FILTERS = [
+    "django_filters",
+]
+
+INSTALLED_APPS = SYSTEM_APPS + CUSTOM_APPS + THIRD_PARTY_APPS + FILTERS
+
+REST_FRAMEWORK = {
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "PAGE_SIZE": 10,
+    "DEFAULT_FILTER_BACKENDS": [
+        "django_filters.rest_framework.DjangoFilterBackend",
+        "rest_framework.filters.SearchFilter",
+        "rest_framework.filters.OrderingFilter",
+    ],
+}
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -89,6 +104,11 @@ DATABASES = {
         "PASSWORD": os.getenv("DB_PASSWORD"),
         "HOST": os.getenv("DB_HOST"),
         "PORT": "3306",
+        "OPTIONS": {
+            "charset": "utf8mb4",
+            "use_unicode": True,
+            "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
+        },
     }
 }
 
