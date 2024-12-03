@@ -12,13 +12,15 @@ load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-MEDIA_URL = "/media/"
-MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
 DEBUG = os.getenv("DJANGO_DEBUG", "False") == "True"
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = [
+    ".elasticbeanstalk.com",
+    "localhost",
+    "127.0.0.1",
+]
 
 # Application definition
 CUSTOM_APPS = [
@@ -95,22 +97,34 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-# Database configuration
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.mysql",
-        "NAME": os.getenv("DB_NAME"),
-        "USER": os.getenv("DB_USER"),
-        "PASSWORD": os.getenv("DB_PASSWORD"),
-        "HOST": os.getenv("DB_HOST"),
-        "PORT": "3306",
-        "OPTIONS": {
-            "charset": "utf8mb4",
-            "use_unicode": True,
-            "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
-        },
+# Database
+if "RDS_HOSTNAME" in os.environ:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.mysql",
+            "NAME": os.environ["RDS_DB_NAME"],
+            "USER": os.environ["RDS_USERNAME"],
+            "PASSWORD": os.environ["RDS_PASSWORD"],
+            "HOST": os.environ["RDS_HOSTNAME"],
+            "PORT": os.environ["RDS_PORT"],
+        }
     }
-}
+
+# Static files (CSS, JavaScript, Images)
+STATIC_URL = "/static/"
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+
+# Media files
+MEDIA_URL = "/media/"
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+
+# Security settings
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -134,14 +148,6 @@ TIME_ZONE = "Asia/Seoul"
 USE_I18N = True
 USE_TZ = True
 
-# Static files (CSS, JavaScript, Images)
-STATIC_URL = "/static/"  # URL 경로 수정
-STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")  # 배포 시 정적 파일이 모이는 경로
-
-# 개발 중 추가 정적 파일 디렉토리
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, "static"),
-]
 
 # Static files finder
 STATICFILES_FINDERS = [

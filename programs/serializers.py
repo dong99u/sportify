@@ -5,6 +5,9 @@ from .models import Program
 class ProgramSerializer(serializers.ModelSerializer):
     category_name = serializers.CharField(source="category.fclty_ty_nm", read_only=True)
     facility_name = serializers.CharField(source="facility.fclty_nm", read_only=True)
+    facility_address = serializers.CharField(
+        source="facility.fclty_addr", read_only=True
+    )
     region = serializers.CharField(source="facility.sido.ctprvn_nm", read_only=True)
     days_display = serializers.CharField(
         source="get_days_display_korean", read_only=True
@@ -19,6 +22,7 @@ class ProgramSerializer(serializers.ModelSerializer):
             "progrm_nm",
             "category_name",
             "facility_name",
+            "facility_address",  # 도로명 주소 추가
             "region",
             "region_image",
             "progrm_days",
