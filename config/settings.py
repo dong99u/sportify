@@ -1,26 +1,23 @@
 import pymysql
+from pathlib import Path
+import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 pymysql.install_as_MySQLdb()
-
-from pathlib import Path
-from dotenv import load_dotenv
-import os
-
-# .env 파일 로드
-load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
-DEBUG = os.getenv("DJANGO_DEBUG", "False") == "True"
-ALLOWED_HOSTS = [
-    ".elasticbeanstalk.com",
-    "localhost",
-    "127.0.0.1",
-]
+SECRET_KEY = os.environ.get("SECRET_KEY")
+
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = os.environ.get("DEBUG", "False") == "True"
+
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "").split(",")
 
 # Application definition
 CUSTOM_APPS = [
@@ -43,7 +40,8 @@ THIRD_PARTY_APPS = [
     "corsheaders",
     "whitenoise.runserver_nostatic",
     "multiselectfield",
-    "rest_framework",  # 추가
+    "rest_framework",
+    "storages",
 ]
 
 FILTERS = [
@@ -64,7 +62,7 @@ REST_FRAMEWORK = {
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware",  # static 파일 처리를 위한 미들웨어
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -73,9 +71,6 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
-
-# Whitenoise 설정
-STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"  # ManifestStaticFilesStorage에서 변경
 
 ROOT_URLCONF = "config.urls"
 
@@ -98,23 +93,26 @@ TEMPLATES = [
 WSGI_APPLICATION = "config.wsgi.application"
 
 # Database
-if "RDS_HOSTNAME" in os.environ:
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.mysql",
-            "NAME": os.environ["RDS_DB_NAME"],
-            "USER": os.environ["RDS_USERNAME"],
-            "PASSWORD": os.environ["RDS_PASSWORD"],
-            "HOST": os.environ["RDS_HOSTNAME"],
-            "PORT": os.environ["RDS_PORT"],
-        }
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.mysql",
+        "NAME": os.environ.get("RDS_DB_NAME"),
+        "USER": os.environ.get("RDS_USERNAME"),
+        "PASSWORD": os.environ.get("RDS_PASSWORD"),
+        "HOST": os.environ.get("RDS_HOSTNAME"),
+        "PORT": os.environ.get("RDS_PORT", "3306"),
+        "OPTIONS": {
+            "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
+            "charset": "utf8mb4",
+        },
     }
+}
 
-# Static files (CSS, JavaScript, Images)
-STATIC_URL = "/static/"
+
+# Static and media files
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+STATIC_URL = "/static/"
 
-# Media files
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
@@ -125,6 +123,18 @@ if not DEBUG:
     CSRF_COOKIE_SECURE = True
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# CORS settings
+CORS_ALLOW_ALL_ORIGINS = False  # 프로덕션에서는 False로 설정
+CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOWED_ORIGINS = os.environ.get("CORS_ORIGINS", "").split(",")
+
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^http://\w+\.hufsthon\.site:8000$",
+    r"^https://\w+\.elasticbeanstalk\.com$",
+]
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -148,47 +158,5 @@ TIME_ZONE = "Asia/Seoul"
 USE_I18N = True
 USE_TZ = True
 
-
-# Static files finder
-STATICFILES_FINDERS = [
-    "django.contrib.staticfiles.finders.FileSystemFinder",
-    "django.contrib.staticfiles.finders.AppDirectoriesFinder",
-]
-
 # Default primary key field type
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-
-# CORS 설정
-CORS_ALLOW_ALL_ORIGINS = True
-CORS_ALLOW_CREDENTIALS = True
-
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:8000",
-    "http://127.0.0.1:8000",
-    "http://dev.hufsthon.site:8000",
-]
-
-CORS_ALLOWED_ORIGIN_REGEXES = [
-    r"^http://\w+\.hufsthon\.site:8000$",
-]
-
-CORS_ALLOW_METHODS = [
-    "DELETE",
-    "GET",
-    "OPTIONS",
-    "PATCH",
-    "POST",
-    "PUT",
-]
-
-CORS_ALLOW_HEADERS = [
-    "accept",
-    "accept-encoding",
-    "authorization",
-    "content-type",
-    "dnt",
-    "origin",
-    "user-agent",
-    "x-csrftoken",
-    "x-requested-with",
-]
