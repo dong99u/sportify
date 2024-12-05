@@ -1,34 +1,19 @@
-# Git 관련 파일
 .git
 .gitignore
-
-# Python 관련 파일
-__pycache__
+.env
 *.pyc
+__pycache__
+.pytest_cache
+.coverage
+htmlcov/
+dist/
+media/
+staticfiles/
+.DS_Store
 *.pyo
 *.pyd
 .Python
 env/
 venv/
-.env
-
-# 개발 환경 관련 파일
-.idea/
-.vscode/
-*.swp
-*.swo
-
-# 로그 파일
-*.log
-
-# 로컬 데이터베이스
-db.sqlite3
-
-# 미디어 파일과 정적 파일
-media/
-staticfiles/
-
-# 문서 파일
-README.md
-docs/
-*.md
+.env.local
+.env.*.local

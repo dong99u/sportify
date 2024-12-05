@@ -1,31 +1,34 @@
-FROM python:3.11-slim
+FROM python:3.11.7-slim
 
-# 기본 패키지 설치
-RUN apt-get update && apt-get install -y \
-    default-libmysqlclient-dev build-essential pkg-config curl && \
-    rm -rf /var/lib/apt/lists/*
-
-# 작업 디렉터리 설정
 WORKDIR /app
 
-# Poetry 설치
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    default-libmysqlclient-dev \
+    pkg-config \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install poetry
 RUN pip install poetry
+
+# Copy poetry files
+COPY pyproject.toml poetry.lock ./
+
+# Configure poetry to not create virtual environment
 RUN poetry config virtualenvs.create false
 
-# 의존성 복사 및 설치
-COPY pyproject.toml poetry.lock ./
+# Install dependencies
 RUN poetry install --no-dev
 
-# 프로젝트 파일 복사
+# Copy project files
 COPY . .
 
-# 정적 파일 수집
-RUN python manage.py collectstatic --noinput
+# Collect static files
+RUN poetry run python manage.py collectstatic --noinput
 
-# 권장: 비루트 사용자 설정
-RUN adduser --disabled-password appuser
-USER appuser
-
-# Gunicorn 실행
+# Expose port
 EXPOSE 8000
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "3", "config.wsgi:application"]
+
+# Start gunicorn
+CMD ["poetry", "run", "gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000"]

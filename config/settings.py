@@ -13,11 +13,31 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get("SECRET_KEY")
+if not SECRET_KEY:
+    raise ValueError("SECRET_KEY environment variable is required")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get("DEBUG", False)
+DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
 
-ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "").split(",")
+
+# 개발 서버용 호스트 추가
+# ALLOWED_HOSTS = [
+#     host.strip()
+#     for host in os.environ.get("ALLOWED_HOSTS", "").split(",")
+#     if host.strip()
+# ] + [
+#     "localhost",
+#     "127.0.0.1",
+#     "*",
+#     "172.29.99.25",
+# ]
+
+ALLOWED_HOSTS = [
+    "localhost",
+    "127.0.0.1",
+    ".ngrok.io",  # ngrok 도메인을 허용
+    "*",  # 개발 환경에서만 사용하세요
+]
 
 
 # Application definition
@@ -64,8 +84,8 @@ REST_FRAMEWORK = {
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
-    "django.contrib.sessions.middleware.SessionMiddleware",
     "corsheaders.middleware.CorsMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -105,10 +125,11 @@ DATABASES = {
         "OPTIONS": {
             "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
             "charset": "utf8mb4",
+            "connect_timeout": 60,
         },
+        "CONN_MAX_AGE": 60,
     }
 }
-
 
 # Static and media files
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
@@ -117,26 +138,64 @@ STATIC_URL = "/static/"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
-# Security settings
-if not DEBUG:
+# CORS settings
+CORS_ORIGIN_ALLOW_ALL = True  # 개발 중에는 모든 origin 허용
+CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOWED_ORIGINS = [
+    "https://dev.hufsthon.site",
+    "https://hufsthon.site",
+    "http://dev.hufsthon.site",
+    "http://hufsthon.site",
+]
+
+CORS_ALLOW_METHODS = [
+    "DELETE",
+    "GET",
+    "OPTIONS",
+    "PATCH",
+    "POST",
+    "PUT",
+]
+
+CORS_ALLOW_HEADERS = [
+    "accept",
+    "accept-encoding",
+    "authorization",
+    "content-type",
+    "dnt",
+    "origin",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
+]
+
+# CSRF settings
+CSRF_TRUSTED_ORIGINS = [
+    "https://dev.hufsthon.site",
+    "https://hufsthon.site",
+    "http://dev.hufsthon.site",
+    "http://hufsthon.site",
+]
+
+if not DEBUG:  # 프로덕션 환경
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-
-# CORS settings
-CORS_ALLOW_ALL_ORIGINS = False  # 프로덕션에서는 False로 설정
-CORS_ALLOW_CREDENTIALS = True
-
-CORS_ALLOWED_ORIGINS = os.environ.get("CORS_ORIGINS", "").split(",")
-
-
-CORS_ALLOWED_ORIGIN_REGEXES = [
-    r"^http://\w+\.hufsthon\.site:8000$",
-    r"^https://\w+\.elasticbeanstalk\.com$",
-]
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+else:  # 개발 환경
+    SECURE_SSL_REDIRECT = False
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
+    SECURE_HSTS_SECONDS = 0  # HSTS 완전 비활성화
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = False
+    SECURE_HSTS_PRELOAD = False
+    SECURE_PROXY_SSL_HEADER = None
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -162,3 +221,31 @@ USE_TZ = True
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Whitenoise configuration
+if not DEBUG:
+    STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+    WHITENOISE_MAX_AGE = 31536000
+
+# Logging configuration
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+        },
+    },
+    "loggers": {
+        "django.security.csrf": {
+            "handlers": ["console"],
+            "level": "DEBUG",
+            "propagate": True,
+        },
+        "django.request": {
+            "handlers": ["console"],
+            "level": "DEBUG",
+            "propagate": True,
+        },
+    },
+}
