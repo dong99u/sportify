@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 기본 Python 이미지 사용
 FROM python:3.11.7-slim
 
@@ -9,35 +10,39 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 # 시스템 의존성 설치
+=======
+FROM python:3.11.7-slim
+
+WORKDIR /app
+
+# Install system dependencies
+>>>>>>> 762d9ec22f82cb42aacfc6555481aea787211356
 RUN apt-get update && apt-get install -y \
     gcc \
     default-libmysqlclient-dev \
     pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
-# Poetry 설치
+# Install poetry
 RUN pip install poetry
 
-# Poetry 가상환경 생성하지 않도록 설정
-RUN poetry config virtualenvs.create false
-
-# 프로젝트 의존성 파일 복사
+# Copy poetry files
 COPY pyproject.toml poetry.lock ./
 
-# 프로젝트 의존성 설치
-RUN poetry install --no-dev --no-root
+# Configure poetry to not create virtual environment
+RUN poetry config virtualenvs.create false
 
-# 프로젝트 파일 복사
+# Install dependencies
+RUN poetry install --no-dev
+
+# Copy project files
 COPY . .
 
-# media와 static 디렉토리 생성
-RUN mkdir -p media/sido_images staticfiles
-
-# static 파일 수집
-ENV DJANGO_SETTINGS_MODULE=config.settings
-ENV SECRET_KEY="yth9(nv(&xq8wr*qll#k&fxjk1_-n$m#!xilu%q3mwpeixfy_*"
-ENV DEBUG=False
+# Collect static files
 RUN poetry run python manage.py collectstatic --noinput
 
-# gunicorn 설정
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "3", "config.wsgi:application"]
+# Expose port
+EXPOSE 8000
+
+# Start gunicorn
+CMD ["poetry", "run", "gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000"]

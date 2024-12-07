@@ -5,7 +5,13 @@
 
 # Python
 __pycache__
-*.pyc
+.pytest_cache
+.coverage
+htmlcov/
+dist/
+media/
+staticfiles/
+.DS_Store
 *.pyo
 *.pyd
 .Python

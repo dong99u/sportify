@@ -15,15 +15,32 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get("SECRET_KEY")
 if not SECRET_KEY:
     raise ValueError("SECRET_KEY environment variable is required")
+if not SECRET_KEY:
+    raise ValueError("SECRET_KEY environment variable is required")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True  # 디버깅을 위해 임시로 True로 설정
+DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
+
+
+# 개발 서버용 호스트 추가
+# ALLOWED_HOSTS = [
+#     host.strip()
+#     for host in os.environ.get("ALLOWED_HOSTS", "").split(",")
+#     if host.strip()
+# ] + [
+#     "localhost",
+#     "127.0.0.1",
+#     "*",
+#     "172.29.99.25",
+# ]
 
 ALLOWED_HOSTS = [
-    host.strip()
-    for host in os.environ.get("ALLOWED_HOSTS", "").split(",")
-    if host.strip()
+    "localhost",
+    "127.0.0.1",
+    ".ngrok.io",  # ngrok 도메인을 허용
+    "*",  # 개발 환경에서만 사용하세요
 ]
+
 
 # Application definition
 CUSTOM_APPS = [
@@ -72,7 +89,7 @@ MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
-#    "django.middleware.csrf.CsrfViewMiddleware",
+    #    "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
@@ -162,25 +179,25 @@ CSRF_TRUSTED_ORIGINS = [
     "http://dev.hufsthon.site",
     "http://hufsthon.site",
 ]
-CSRF_USE_SESSIONS = True
-CSRF_COOKIE_SECURE = True
-CSRF_COOKIE_SAMESITE = "Lax"
-CSRF_COOKIE_NAME = "csrftoken"
-CSRF_COOKIE_HTTPONLY = False
 
-# Session settings
-SESSION_COOKIE_SECURE = True
-SESSION_COOKIE_SAMESITE = "Lax"
-
-# Security settings
-SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-SECURE_SSL_REDIRECT = True
-SECURE_HSTS_SECONDS = 31536000
-SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-SECURE_HSTS_PRELOAD = True
-SECURE_CONTENT_TYPE_NOSNIFF = True
-SECURE_BROWSER_XSS_FILTER = True
-SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
+if not DEBUG:  # 프로덕션 환경
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+else:  # 개발 환경
+    SECURE_SSL_REDIRECT = False
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
+    SECURE_HSTS_SECONDS = 0  # HSTS 완전 비활성화
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = False
+    SECURE_HSTS_PRELOAD = False
+    SECURE_PROXY_SSL_HEADER = None
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -234,4 +251,3 @@ LOGGING = {
         },
     },
 }
-
