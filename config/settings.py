@@ -15,32 +15,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get("SECRET_KEY")
 if not SECRET_KEY:
     raise ValueError("SECRET_KEY environment variable is required")
-if not SECRET_KEY:
-    raise ValueError("SECRET_KEY environment variable is required")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
+DEBUG = True
 
-
-# 개발 서버용 호스트 추가
-# ALLOWED_HOSTS = [
-#     host.strip()
-#     for host in os.environ.get("ALLOWED_HOSTS", "").split(",")
-#     if host.strip()
-# ] + [
-#     "localhost",
-#     "127.0.0.1",
-#     "*",
-#     "172.29.99.25",
-# ]
-
-ALLOWED_HOSTS = [
-    "localhost",
-    "127.0.0.1",
-    ".ngrok.io",  # ngrok 도메인을 허용
-    "*",  # 개발 환경에서만 사용하세요
-]
-
+ALLOWED_HOSTS = ["*"]
 
 # Application definition
 CUSTOM_APPS = [
@@ -140,16 +119,20 @@ STATIC_URL = "/static/"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
-# CORS settings
-CORS_ORIGIN_ALLOW_ALL = True  # 개발 중에는 모든 origin 허용
-CORS_ALLOW_CREDENTIALS = True
+# 모든 보안 설정 비활성화
+SECURE_SSL_REDIRECT = False
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = False
+SECURE_HSTS_SECONDS = 0
+SECURE_HSTS_INCLUDE_SUBDOMAINS = False
+SECURE_HSTS_PRELOAD = False
+SECURE_PROXY_SSL_HEADER = None
+SECURE_BROWSER_XSS_FILTER = False
+SECURE_CONTENT_TYPE_NOSNIFF = False
 
-CORS_ALLOWED_ORIGINS = [
-    "https://dev.hufsthon.site",
-    "https://hufsthon.site",
-    "http://dev.hufsthon.site",
-    "http://hufsthon.site",
-]
+# CORS settings
+CORS_ORIGIN_ALLOW_ALL = True
+CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOW_METHODS = [
     "DELETE",
@@ -180,25 +163,6 @@ CSRF_TRUSTED_ORIGINS = [
     "http://hufsthon.site",
 ]
 
-if not DEBUG:  # 프로덕션 환경
-    SECURE_SSL_REDIRECT = True
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
-    SECURE_BROWSER_XSS_FILTER = True
-    SECURE_CONTENT_TYPE_NOSNIFF = True
-    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-    SECURE_HSTS_SECONDS = 31536000
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_HSTS_PRELOAD = True
-else:  # 개발 환경
-    SECURE_SSL_REDIRECT = False
-    SESSION_COOKIE_SECURE = False
-    CSRF_COOKIE_SECURE = False
-    SECURE_HSTS_SECONDS = 0  # HSTS 완전 비활성화
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = False
-    SECURE_HSTS_PRELOAD = False
-    SECURE_PROXY_SSL_HEADER = None
-
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -224,12 +188,7 @@ USE_TZ = True
 # Default primary key field type
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# Whitenoise configuration
-if not DEBUG:
-    STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
-    WHITENOISE_MAX_AGE = 31536000
-
-# Logging configuration
+# Logging configuration for debugging
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -239,15 +198,17 @@ LOGGING = {
         },
     },
     "loggers": {
-        "django.security.csrf": {
+        "django": {
             "handlers": ["console"],
             "level": "DEBUG",
-            "propagate": True,
         },
         "django.request": {
             "handlers": ["console"],
             "level": "DEBUG",
-            "propagate": True,
+        },
+        "django.security": {
+            "handlers": ["console"],
+            "level": "DEBUG",
         },
     },
 }
