@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # 기본 Python 이미지 사용
 FROM python:3.11.7-slim
 
@@ -10,13 +9,6 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 # 시스템 의존성 설치
-=======
-FROM python:3.11.7-slim
-
-WORKDIR /app
-
-# Install system dependencies
->>>>>>> 762d9ec22f82cb42aacfc6555481aea787211356
 RUN apt-get update && apt-get install -y \
     gcc \
     default-libmysqlclient-dev \
